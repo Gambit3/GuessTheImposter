@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Guess the Imposter</title>
+<style>
+    :root {
+        --bg: #0d0d1f;
+        --accent: #00ffea;
+        --accent2: #ff00aa;
+        --text: #e0e0ff;
+        --card-bg: #1a1a2e;
+        --glow: 0 0 20px rgba(0,255,234,0.6);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Segoe UI', sans-serif;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+        overflow-x: hidden;
+    }
+    h1 {
+        font-size: 2.5rem;
+        margin: 20px 0 30px;
+        text-align: center;
+        text-shadow: var(--glow);
+        color: var(--accent);
+    }
+    .container {
+        width: 100%;
+        max-width: 600px;
+    }
+    .section {
+        background: rgba(26,26,46,0.6);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: var(--glow);
+        border: 1px solid var(--accent);
+    }
+    input, textarea, button {
+        font-size: 1.1rem;
+        padding: 12px;
+        border-radius: 10px;
+        margin: 8px 0;
+    }
+    input[type="text"], textarea {
+        width: 100%;
+        background: #16213e;
+        border: 1px solid var(--accent);
+        color: var(--text);
+    }
+    button {
+        background: linear-gradient(45deg, var(--accent), var(--accent2));
+        color: black;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.3s;
+        min-height: 52px;
+    }
+    button:hover { transform: translateY(-3px); box-shadow: var(--glow); }
+    .player-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    .player-tag {
+        background: var(--card-bg);
+        padding: 10px 16px;
+        border-radius: 30px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+    /* ONLY THIS PART WAS CHANGED — PERFECT ROUND DELETE BUTTON */
+    .remove-player {
+        background: #ff3366;
+        color: white;
+        border: none;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        padding: 0;
+        line-height: 1;
+        box-shadow: 0 2px 8px rgba(255,51,102,0.4);
+    }
+    .remove-player:hover {
+        background: #ff1744;
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(255,51,102,0.6);
+    }
+    .remove-player:active {
+        transform: scale(0.95);
+    }
+    /* END OF CHANGES */
+    .categories {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+    }
+    label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 1.1rem;
+    }
+    input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        accent-color: var(--accent);
+    }
+    #startBtn {
+        width: 100%;
+        padding: 18px;
+        font-size: 1.4rem;
+        margin-top: 20px;
+    }
+    /* Card View */
+    #cardView {
+        position: fixed;
+        inset: 0;
+        background: var(--bg);
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+    }
+    .card-wrapper {
+        perspective: 1000px;
+        width: 300px;
+        height: 450px;
+    }
+    .card {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        transform-style: preserve-3d;
+        transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        cursor: pointer;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.8), var(--glow);
+    }
+    .card.flipped { transform: rotateY(180deg); }
+    .card-front, .card-back {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        backface-visibility: hidden;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        padding: 40px;
+        text-align: center;
+        background: linear-gradient(135deg, #16213e, #0f3460);
+        border: 2px solid var(--accent);
+    }
+    .card-back {
+        transform: rotateY(180deg);
+        background: linear-gradient(135deg, #330a33, #660066);
+    }
+    .card h2 {
+        font-size: 2.2rem;
+        margin-bottom: 20px;
+        text-shadow: var(--glow);
+        color: var(--accent);
+    }
+    .card p {
+        font-size: 1.8rem;
+        line-height: 1.4;
+    }
+    #nextCardBtn {
+        margin-top: 60px;
+        padding: 16px 40px;
+        font-size: 1.3rem;
+    }
+    /* Discussion & Reveal */
+    #discussion, #reveal {
+        display: none;
+        text-align: center;
+        padding: 60px 20px;
+    }
+    #discussion h2, #reveal h2 {
+        font-size: 2.2rem;
+        margin-bottom: 40px;
+        color: var(--accent2);
+    }
+    #reveal .word {
+        font-size: 3rem;
+        margin: 30px 0;
+        color: var(--accent);
+        text-shadow: var(--glow);
+    }
+    #reveal .imposter {
+        font-size: 2rem;
+        color: #ff3366;
+    }
+    #playAgainBtn {
+        margin-top: 60px;
+        padding: 18px 50px;
+        font-size: 1.5rem;
+    }
+    @media (max-width: 480px) {
+        h1 { font-size: 2rem; }
+        .card-wrapper { width: 280px; height: 420px; }
+        .card h2 { font-size: 1.8rem; }
+        .card p { font-size: 1.5rem; }
+    }
+</style>
+</head>
+<body>
+<div class="container" id="setup">
+    <h1>Guess the Imposter</h1>
+    <div class="section">
+        <h2>Žaidėjai</h2>
+        <div style="display:flex;gap:10px;">
+            <input type="text" id="playerName" placeholder="Įvesk vardą" onkeydown="if(event.key==='Enter') addPlayer()">
+            <button onclick="addPlayer()">+</button>
+        </div>
+        <div class="player-list" id="playerList"></div>
+    </div>
+    <div class="section">
+        <h2>Kategorijos</h2>
+        <div class="categories">
+            <label><input type="checkbox" value="celebrities"> Įžymybės</label>
+            <label><input type="checkbox" value="food"> Maistas</label>
+            <label><input type="checkbox" value="objects"> Daiktai</label>
+            <label><input type="checkbox" value="animals"> Gyvūnai</label>
+            <label><input type="checkbox" value="countries"> Šalys</label>
+            <label><input type="checkbox" value="jobs"> Profesijos</label>
+            <label><input type="checkbox" id="customCheck"> Custom</label>
+        </div>
+        <textarea id="customList" placeholder="Įveskite žodžius atskirtus kableliais..." rows="3" style="display:none;margin-top:10px;"></textarea>
+    </div>
+    <button id="startBtn" onclick="startGame()">Pradėti Žaidimą</button>
+</div>
+<!-- Card View - ONLY changed front and back content -->
+<div id="cardView">
+    <div class="card-wrapper">
+        <div class="card" id="card">
+            <div class="card-front">
+                <h2 id="playerNameDisplay"></h2>
+            </div>
+            <div class="card-back" id="cardBack">
+                <h2 id="cardText"></h2>
+            </div>
+        </div>
+    </div>
+    <button id="nextCardBtn" onclick="nextPlayer()">Kitas žaidėjas</button>
+</div>
+<div id="discussion">
+    <h2 id="starterText">Pokalbį pradeda: Vardenis</h2>
+    <button onclick="revealImposter()">Atskleisti Imposter</button>
+</div>
+<div id="reveal">
+    <h2>Žodis buvo:</h2>
+    <div class="word" id="revealWord"></div>
+    <div class="imposter" id="revealImposter"></div>
+    <button id="playAgainBtn" onclick="playAgain()">Žaisti dar kartą</button>
+</div>
+<script>
+const wordLists = {
+    celebrities: ["Justin Bieber", "Elon Musk", "Taylor Swift", "Cristiano Ronaldo", "Dua Lipa", "Ed Sheeran", "Will Smith", "Dwayne Johnson", "Drake", "Diddy", "Epstein", "Kanye West", "Ice Spice", "Lionel Messi", "Bill Gates", "Steve Jobs", "Mark Zuckerberg", "MrBeast", "IShowSpeed", "Kai Cenat", "Arvydas Sabonis", "Rūta Meilutytė", "Žydrūnas Savickas", "Jonas Valančiūnas", "Domantas Sabonis", "Mantas Kalnietis", "Marijonas Mikutavičius", "Donatas Montvydas", "Monika Liu", "SEL", "OG Version", "Jessica Shy", "M. K. Čiurlionis", "Jonas Basanavičius", "Antanas Smetona", "Žemaitė"],
+    food: ["Pica", "Sušiai", "Kebabas", "Blynai", "Cepelinai", "Šaltibarščiai", "Kugelis", "Ledai", "Burgeris", "Steikas", "Gruzdintos bulvytės", "spurgos", "vafliai", "meduoliai", "desertai", "salotos", "lazanija", "spagečiai", "makaronai", "omletas", "kiaušinienė", "košė", "kepta duona", "bulvių košė", "saldainiai", "uogienė", "arbata", "gira"],
+    objects: ["Telefonas", "Klaviatūra", "Ausinės", "Knyga", "Dviratis", "Laikrodis", "Puodelis", "Televizorius", "Gitara", "Fotoaparatas", "stalas", "langas", "durys", "Popierius", "dovana", "kompasas", "žemėlapis", "kortos", "pinigai", "saldainiai", "sofa", "šaukštas", "šakutė", "kilimas"],
+    animals: ["katė", "šuo", "arklys", "karvė", "ožka", "avis", "kiaulė", "triušis", "žiurkė", "beždžionė", "liūtas", "tigras", "dramblys", "zebras", "pingvinas", "vilkas", "lapė", "šernas", "ežys", "briedis", "stirna", "kiškis", "antilopė", "varlė", "gyvatė", "vėžlys", "krokodilas", "gulbė", "antis", "žąsis", "karvelis", "kregždė", "gervė", "lakštingala", "pelė", "žuvis", "krabas", "delfinas", "ruonis", "banginis", "medūza", "drugelis", "bitė", "skruzdė", "boružė", "voras", "šikšnosparnis", "pelėda"],
+    countries: ["Lietuva", "Japonija", "Brazilija", "Islandija", "Australija", "Kanada", "Italija", "Egiptas", "Norvegija", "Meksika", "Nigeris", "JAV"],
+    jobs: ["Programuotojas", "Gydytojas", "Mokytojas", "Aktorius", "Pilotas", "Virėjas", "Policininkas", "Dizaineris", "Inžinierius", "Žurnalistas"],
+};
+let players = [];
+let currentPlayerIndex = 0;
+let secretWord = "";
+let imposterIndex = -1;
+function loadPlayers() {
+    const saved = localStorage.getItem("imposterPlayers");
+    if (saved) {
+        players = JSON.parse(saved);
+        renderPlayers();
+    }
+}
+loadPlayers();
+function addPlayer() {
+    const input = document.getElementById("playerName");
+    const name = input.value.trim();
+    if (name && !players.includes(name)) {
+        players.push(name);
+        localStorage.setItem("imposterPlayers", JSON.stringify(players));
+        renderPlayers();
+        input.value = "";
+    }
+}
+function removePlayer(index) {
+    players.splice(index, 1);
+    localStorage.setItem("imposterPlayers", JSON.stringify(players));
+    renderPlayers();
+}
+function renderPlayers() {
+    const list = document.getElementById("playerList");
+    list.innerHTML = "";
+    players.forEach((p, i) => {
+        const tag = document.createElement("div");
+        tag.className = "player-tag";
+        tag.innerHTML = `${p} <button class="remove-player" onclick="removePlayer(${i})">×</button>`;
+        list.appendChild(tag);
+    });
+}
+document.getElementById("customCheck").addEventListener("change", function() {
+    document.getElementById("customList").style.display = this.checked ? "block" : "none";
+});
+function startGame() {
+    if (players.length < 3) {
+        alert("Reikia bent 3 žaidėjų!");
+        return;
+    }
+    const checked = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'));
+    if (checked.length === 0) {
+        alert("Pasirinkite bent vieną kategoriją!");
+        return;
+    }
+    let wordPool = [];
+    checked.forEach(cb => {
+        if (cb.id === "customCheck") {
+            const text = document.getElementById("customList").value;
+            if (text.trim()) {
+                wordPool.push(...text.split(",").map(w => w.trim()).filter(w => w));
+            }
+        } else {
+            wordPool.push(...wordLists[cb.value]);
+        }
+    });
+    if (wordPool.length === 0) {
+        alert("Nėra žodžių pasirinktose kategorijose!");
+        return;
+    }
+    secretWord = wordPool[Math.floor(Math.random() * wordPool.length)];
+    imposterIndex = Math.floor(Math.random() * players.length);
+    document.getElementById("setup").style.display = "none";
+    document.getElementById("cardView").style.display = "flex";
+    currentPlayerIndex = 0;
+    showCardForCurrentPlayer();
+}
+function showCardForCurrentPlayer() {
+    const card = document.getElementById("card");
+    const textEl = document.getElementById("cardText");
+    card.classList.remove("flipped");
+
+    document.getElementById("playerNameDisplay").textContent = players[currentPlayerIndex];
+
+    if (currentPlayerIndex === imposterIndex) {
+        textEl.textContent = "TU ESI IMPOSTER";
+        document.getElementById("cardBack").style.background = "linear-gradient(135deg, #330a33, #660066)";
+    } else {
+        textEl.textContent = secretWord;
+        document.getElementById("cardBack").style.background = "linear-gradient(135deg, #16213e, #0f3460)";
+    }
+}
+const card = document.getElementById("card");
+let isDown = false;
+card.addEventListener("mousedown", () => { isDown = true; card.classList.add("flipped"); });
+card.addEventListener("mouseup", () => { isDown = false; card.classList.remove("flipped"); });
+card.addEventListener("mouseleave", () => { if(isDown) card.classList.remove("flipped"); isDown = false; });
+card.addEventListener("touchstart", (e) => { e.preventDefault(); card.classList.add("flipped"); });
+card.addEventListener("touchend", (e) => { e.preventDefault(); card.classList.remove("flipped"); });
+card.addEventListener("touchcancel", (e) => { e.preventDefault(); card.classList.remove("flipped"); });
+function nextPlayer() {
+    currentPlayerIndex++;
+    if (currentPlayerIndex >= players.length) {
+        document.getElementById("cardView").style.display = "none";
+        const starter = players[Math.floor(Math.random() * players.length)];
+        document.getElementById("starterText").textContent = `Pokalbį pradeda: ${starter}`;
+        document.getElementById("discussion").style.display = "block";
+    } else {
+        showCardForCurrentPlayer();
+    }
+}
+function revealImposter() {
+    document.getElementById("discussion").style.display = "none";
+    document.getElementById("revealWord").textContent = secretWord;
+    document.getElementById("revealImposter").textContent = `Imposteris buvo: ${players[imposterIndex]}`;
+    document.getElementById("reveal").style.display = "block";
+}
+function playAgain() {
+    document.getElementById("reveal").style.display = "none";
+    document.getElementById("setup").style.display = "block";
+    currentPlayerIndex = 0;
+    secretWord = "";
+    imposterIndex = -1;
+}
+</script>
+</body>
+</html>
